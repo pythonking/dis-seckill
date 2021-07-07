@@ -25,7 +25,7 @@ public interface SeckillServiceApi {
      * 2. 将生成的订单写入miaosha_order表中
      *
      * @param userID  秒杀商品的用户
-     * @param goodsID 所秒杀的商品ID
+     * @param goodsId 所秒杀的商品ID
      * @return 生成的订单信息
      */
     OrderInfo seckill(long userID, long goodsId);

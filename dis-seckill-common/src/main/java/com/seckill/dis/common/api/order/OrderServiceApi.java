@@ -32,7 +32,7 @@ public interface OrderServiceApi {
      * 创建订单
      *
      * @param userId
-     * @param goodsId
+     * @param goodsdId
      * @return
      */
     OrderInfo createOrder(Long userId, Long goodsdId);

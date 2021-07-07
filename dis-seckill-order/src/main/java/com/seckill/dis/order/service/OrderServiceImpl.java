@@ -53,7 +53,7 @@ public class OrderServiceImpl implements OrderServiceApi {
      * 两个操作需要构成一个数据库事务
      *
      * @param userId
-     * @param goods
+     * @param goodsId
      * @return
      */
     @Transactional

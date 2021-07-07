@@ -20,8 +20,6 @@ import javax.script.ScriptEngineManager;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Random;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 秒杀服务接口实现
@@ -51,8 +49,8 @@ public class SeckillServiceImpl implements SeckillServiceApi {
      * 减库存，生成订单，实现秒杀操作核心业务
      * 秒杀操作由两步构成，不可分割，为一个事务
      *
-     * @param userID  秒杀商品的用户唯一ID号
-     * @param goods 所秒杀的商品
+     * @param userId  秒杀商品的用户唯一ID号
+     * @param goodsId 所秒杀的商品
      * @return
      */
     @Transactional
@@ -62,7 +60,7 @@ public class SeckillServiceImpl implements SeckillServiceApi {
         // 1. 减库存
         goodsService.reduceStock(goodsId);
         // 2. 生成订单；向 order_info 表和 seckill_order 表中写入订单信息
-        OrderInfo order = orderService.createOrder(userId,goodsId);
+        OrderInfo order = orderService.createOrder(userId, goodsId);
 
         // logger.info("订单生成成功");
 
@@ -83,8 +81,8 @@ public class SeckillServiceImpl implements SeckillServiceApi {
         SeckillOrder order = orderService.getSeckillOrderByUserIdAndGoodsId(userId, goodsId);
         if (order != null) {//秒杀成功
             return order.getOrderId();
-        } 
-        return -1;       
+        }
+        return -1;
     }
 
     /**
