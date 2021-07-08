@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 
 
-
 /**
  * 秒杀接口
  *
@@ -86,18 +85,18 @@ public class SeckillController implements InitializingBean {
     @AccessLimit(seconds = 5, maxAccessCount = 5, needLogin = true)
     @RequestMapping(value = "path", method = RequestMethod.GET)
     @ResponseBody
-    @SentinelResource(value = "Seckill",blockHandler ="blockHandlerFordoSeckill",blockHandlerClass = {MyBlockHandler.class})
-    public Result<String> getSeckillPath( UserVo user,
+    @SentinelResource(value = "Seckill", blockHandler = "blockHandlerFordoSeckill", blockHandlerClass = {MyBlockHandler.class})
+    public Result<String> getSeckillPath(UserVo user,
                                          @RequestParam("goodsId") long goodsId,
                                          @RequestParam(value = "verifyCode") int verifyCode) {
 
         /** 在执行下面的逻辑之前，会先对path请求进行拦截处理（@AccessLimit， AccessInterceptor），防止访问次数过于频繁，对服务器造成过大的压力 */
 
-        boolean check_goodsID=redisService.exists(GoodsKeyPrefix.seckillGoodsInf, ""+goodsId);
-        if(!check_goodsID) return Result.error(CodeMsg.SECKILL_DOODS_ILLEGAL);
+        boolean check_goodsID = redisService.exists(GoodsKeyPrefix.seckillGoodsInf, "" + goodsId);
+        if (!check_goodsID) return Result.error(CodeMsg.SECKILL_DOODS_ILLEGAL);
 
-        long  startTime = redisService.get(GoodsKeyPrefix.seckillGoodsInf, ""+goodsId ,GoodsVo.class).getStartDate().getTime();
-        if(startTime >new Date().getTime()){
+        long startTime = redisService.get(GoodsKeyPrefix.seckillGoodsInf, "" + goodsId, GoodsVo.class).getStartDate().getTime();
+        if (startTime > new Date().getTime()) {
             return Result.error(CodeMsg.SECKILL_TIME_ILLEGAL);
         }
         // 校验验证码
@@ -114,6 +113,7 @@ public class SeckillController implements InitializingBean {
     }
 
     /* 压力测试时候注释掉 :验证码和秒杀地址隐藏 */
+
     /**
      * 秒杀逻辑（页面静态化分离，不需要直接将页面返回给客户端，而是返回客户端需要的页面动态数据，返回数据时json格式）
      * GET/POST的@RequestMapping是有区别的
@@ -131,7 +131,7 @@ public class SeckillController implements InitializingBean {
     // {path}为客户端回传的path，最初也是有服务端产生的
     @RequestMapping(value = "{path}/doSeckill", method = RequestMethod.POST)
     @ResponseBody
-    public Result<Integer> doSeckill( UserVo user,
+    public Result<Integer> doSeckill(UserVo user,
                                      @RequestParam("goodsId") long goodsId,
                                      @PathVariable("path") String path) {
 
@@ -154,7 +154,7 @@ public class SeckillController implements InitializingBean {
         Long stock = redisService.decr(GoodsKeyPrefix.GOODS_STOCK, "" + goodsId);
         if (stock < 0) {
             localOverMap.put(goodsId, true);// 秒杀结束。标记该商品已经秒杀结束
-            redisService.set(GoodsKeyPrefix.GOODS_STOCK, "" +goodsId, 0);
+            redisService.set(GoodsKeyPrefix.GOODS_STOCK, "" + goodsId, 0);
             return Result.error(CodeMsg.SECKILL_OVER);
         }
 
@@ -171,7 +171,7 @@ public class SeckillController implements InitializingBean {
         }
 
         // 商品有库存且用户为秒杀商品，则将秒杀请求放入MQ
-        SkMessage message = new SkMessage(user.getUuid(),goodsId);
+        SkMessage message = new SkMessage(user.getUuid(), goodsId);
 
         // 放入MQ(对秒杀请求异步处理，直接返回)
         sender.sendSkMessage(message);
@@ -183,19 +183,18 @@ public class SeckillController implements InitializingBean {
     /**
      * 用于返回用户秒杀的结果
      *
-     * @param model
      * @param user
      * @param goodsId
      * @return orderId：成功, -1：秒杀失败, 0： 排队中
      */
     @RequestMapping(value = "result", method = RequestMethod.GET)
     @ResponseBody
-    public Result<Long> getSeckillResult( UserVo user,
+    public Result<Long> getSeckillResult(UserVo user,
                                          @RequestParam("goodsId") long goodsId) {
         long result = seckillService.getSeckillResult(user.getUuid(), goodsId);
-        if(result!=-1L) return Result.success(result);
+        if (result != -1L) return Result.success(result);
         boolean isOver = localOverMap.get(goodsId);
-        if(!isOver){
+        if (!isOver) {
             return Result.success(0L);
         }
         return Result.success(-1L);
@@ -212,15 +211,15 @@ public class SeckillController implements InitializingBean {
      */
     @RequestMapping(value = "verifyCode", method = RequestMethod.GET)
     @ResponseBody
-    @SentinelResource(value = "verifyCode",blockHandler ="blockHandlerForVerifyCodel",blockHandlerClass = {MyBlockHandler.class})
+    @SentinelResource(value = "verifyCode", blockHandler = "blockHandlerForVerifyCodel", blockHandlerClass = {MyBlockHandler.class})
     public Result<String> getVerifyCode(HttpServletResponse response, UserVo user,
                                         @RequestParam("goodsId") long goodsId) {
         logger.info("获取验证码");
-        if (user == null ) {
+        if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
         }
-        boolean check_goodsID=redisService.exists(GoodsKeyPrefix.seckillGoodsInf, ""+goodsId);
-        if(!check_goodsID) return Result.error(CodeMsg.SECKILL_DOODS_ILLEGAL);
+        boolean check_goodsID = redisService.exists(GoodsKeyPrefix.seckillGoodsInf, "" + goodsId);
+        if (!check_goodsID) return Result.error(CodeMsg.SECKILL_DOODS_ILLEGAL);
 
         // 刷新验证码的时候置缓存中的随机地址无效
         String path = redisService.get(SkKeyPrefix.SK_PATH, "" + user.getUuid() + "_" + goodsId, String.class);
@@ -247,6 +246,7 @@ public class SeckillController implements InitializingBean {
             return Result.error(CodeMsg.SECKILL_FAIL);
         }
     }
+
     /**
      * 调试接口，可以动态加载商品信息到redis缓存中
      *
@@ -257,7 +257,7 @@ public class SeckillController implements InitializingBean {
     public Result<Boolean> test() {
         logger.info("商品信息热加载");
         afterPropertiesSet();
-        return Result.success(true);     
+        return Result.success(true);
     }
 
     /**
@@ -328,7 +328,7 @@ public class SeckillController implements InitializingBean {
         // 将商品的库存信息存储在redis中
         for (GoodsVo good : goods) {
             redisService.set(GoodsKeyPrefix.GOODS_STOCK, "" + good.getId(), good.getStockCount());
-            redisService.set(GoodsKeyPrefix.seckillGoodsInf, ""+ good.getId() , good);
+            redisService.set(GoodsKeyPrefix.seckillGoodsInf, "" + good.getId(), good);
             // 在系统启动时，标记库存不为空
             localOverMap.put(good.getId(), false);
         }
